@@ -1,6 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { Spinner } from './ui.jsx';
 
 const MODAL_WIDTH = {
@@ -50,7 +51,35 @@ export function Modal({ open, onOpenChange, title, description, footer, children
   );
 }
 
-export function Drawer({ open, onOpenChange, title, description, footer, children, width = 520, bodyClassName, headerRight }) {
+export function Drawer({ open, onOpenChange, title, description, footer, children, width = 520, bodyClassName, headerRight, scrollHint = '下面还有内容' }) {
+  const bodyRef = useRef(null);
+  const [moreBelow, setMoreBelow] = useState(false);
+
+  const updateMore = () => {
+    const el = bodyRef.current;
+    if (!el) return;
+    setMoreBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 24);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const el = bodyRef.current;
+    if (!el) return;
+    const t = setTimeout(updateMore, 80);
+    const ro = new ResizeObserver(updateMore);
+    ro.observe(el);
+    return () => {
+      clearTimeout(t);
+      ro.disconnect();
+    };
+  }, [open]);
+
+  const scrollDown = () => {
+    const el = bodyRef.current;
+    if (!el) return;
+    el.scrollBy({ top: Math.max(180, Math.round(el.clientHeight * 0.65)), behavior: 'smooth' });
+  };
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -80,7 +109,21 @@ export function Drawer({ open, onOpenChange, title, description, footer, childre
               </DialogPrimitive.Close>
             </div>
           </header>
-          <div className={clsx('min-h-0 flex-1 overflow-y-auto px-5 py-4', bodyClassName)}>{children}</div>
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <div ref={bodyRef} onScroll={updateMore} className={clsx('min-h-0 flex-1 overflow-y-auto px-5 py-4', bodyClassName)}>{children}</div>
+            {moreBelow ? (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-[var(--panel)] via-[var(--panel)]/92 to-transparent pb-2 pt-10">
+                <button
+                  type="button"
+                  onClick={scrollDown}
+                  className="pointer-events-auto flex items-center gap-1 rounded-full border border-[var(--line-strong)] bg-[var(--panel-2)]/95 px-2.5 py-1 text-[10.5px] text-[var(--fg-2)] shadow-[0_8px_24px_-12px_rgba(0,0,0,.9)] transition-colors hover:border-[color-mix(in_srgb,var(--accent)_45%,transparent)] hover:text-[var(--fg)]"
+                >
+                  <ChevronDown size={12} className="animate-bounce" />
+                  {scrollHint}
+                </button>
+              </div>
+            ) : null}
+          </div>
           {footer ? <footer className="flex items-center justify-end gap-2 border-t border-[var(--line)] bg-black/15 px-5 py-3.5">{footer}</footer> : null}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

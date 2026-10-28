@@ -353,6 +353,7 @@ export default function ProjectsPage({ onOpen, publicMode = false, guest = false
         title="新建项目"
         description="故事原文决定后续所有章节与分镜，尽量粘贴完整、连贯的文本。"
         width={640}
+        scrollHint="下面还有参数"
         footer={
           <>
             <span className="mr-auto text-[11px] text-[var(--fg-4)]">{form.novel.length.toLocaleString()} 字</span>
