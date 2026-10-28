@@ -13,9 +13,11 @@ set "NEXT_DIST_DIR=.next-studio-dev"
 
 rem 长任务（Agent + 多候选渲染）内存峰值较高，避免默认 4GB 堆直接 OOM
 
-set "NODE_OPTIONS=--max-old-space-size=8192"
+set "NODE_OPTIONS=--max-old-space-size=8192"
 rem 开发模式用独立 dist，避免 Next dev 覆盖 start-studio-prod 的 .next-studio 生产构建
 set "HOST=0.0.0.0"
+rem Studio 入口：管理接口始终要求管理员登录；与原版 Web 完全独立
+set "IC_WEB_MODE=studio"
 set "IC_AUTH=1"
 set "IC_MODERATION=1"
 set "IC_MODERATION_FAIL_CLOSED=1"

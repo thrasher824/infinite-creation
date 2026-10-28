@@ -54,6 +54,10 @@ WEB_MODE=studio    # Studio 页面（默认）
 WEB_MODE=classic   # 经典 Next 页面
 ```
 
+后端会自动按 `WEB_MODE` 设置 `IC_WEB_MODE`，两套入口的登录策略彼此独立：
+`studio` 的管理接口始终要求管理员登录（即使 `IC_AUTH=0`）；`classic` 保持原版语义，
+不读取 Studio 后台写入的 `config.auth.enabled`，只看自己的 `IC_AUTH`。
+
 ### SQLite（单机 / 试用）
 
 把 `.env` 改成：

@@ -59,6 +59,8 @@ services:
       IC_DATA_DIR: /data
       IC_MEDIA_DIR: /data/projects
       IC_CONFIG: /data/config.json
+      # 与 Web 入口保持一致：studio 时管理接口始终要求管理员登录，classic 保持原版语义
+      IC_WEB_MODE: ${WEB_MODE:-studio}
       IC_AUTH: ${IC_AUTH:-1}
       IC_MODERATION: ${IC_MODERATION:-1}
       IC_MODERATION_FAIL_CLOSED: ${IC_MODERATION_FAIL_CLOSED:-1}

@@ -211,6 +211,52 @@ pnpm run build && pnpm start
 
 > The Agent kernel `vendor/openclaude/dist/` is a build artifact and not committed; `pnpm install` builds it automatically once (idempotent — skips if present). You only need to manually rerun `pnpm build:agent` after modifying `vendor/openclaude/src/` source. See [docs/agent-architecture.md](docs/agent-architecture.md) for build details.
 
+### Starting the Classic Web and Studio Separately
+
+The two UIs run as independent processes with **independent login/permission policies**. The backend uses `IC_WEB_MODE` to decide which entry it serves:
+
+| Mode | Default port | Login switch source | Admin APIs (config / keys / skills) |
+|---|---|---|---|
+| `classic` (default) | 4600 | Its own `IC_AUTH` only; ignores `config.auth.enabled` written by Studio | Open by default when `IC_AUTH` is off (original behavior) |
+| `studio` | 4610 | `config.auth.enabled` first, then `IC_AUTH` | Always requires an admin token, even when site-wide login is disabled |
+
+```bash
+# ── Classic web (single process, 4600) ────────────────────
+pnpm dev                     # development
+pnpm build && pnpm start     # production
+
+# Only if you want the classic web to require login (does not affect Studio)
+IC_AUTH=1 pnpm dev
+
+# ── Studio (backend 4610 + frontend 4710, two terminals) ──
+# Terminal 1: Studio backend (dev)
+PORT=4610 NEXT_DIST_DIR=.next-studio-dev IC_WEB_MODE=studio IC_AUTH=1 pnpm dev
+# Terminal 2: Studio frontend
+pnpm --filter studio dev
+
+# Studio production
+PORT=4610 NEXT_DIST_DIR=.next-studio IC_WEB_MODE=studio IC_AUTH=1 pnpm start
+pnpm --filter studio build
+STUDIO_PORT=4710 STUDIO_BACKEND=http://127.0.0.1:4610 pnpm --filter studio preview
+```
+
+Setting environment variables in Windows `cmd`:
+
+```bat
+set PORT=4610
+set NEXT_DIST_DIR=.next-studio-dev
+set IC_WEB_MODE=studio
+set IC_AUTH=1
+pnpm dev
+```
+
+> Both can run at the same time. They share `config.json` and the same database, but the classic web never reads Studio's login switch, and Studio's admin APIs are never relaxed because of the classic web.
+>
+> If a production build fails with `EPERM ... Application Data`, Next's file tracing is scanning the user home directory. Point HOME/USERPROFILE at a local directory for the build (already handled in `start-studio-prod.bat`):
+> ```bash
+> HOME="$PWD/.build-home" USERPROFILE="$(cygpath -w "$PWD/.build-home")" pnpm build
+> ```
+
 ## First-Time Configuration
 
 Click ⚙ in the top-right corner:

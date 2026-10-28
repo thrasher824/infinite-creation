@@ -1,14 +1,16 @@
 // SwotAtmk/infinite-creation · 开源地址 https://github.com/SwotAtmk/infinite-creation
 import { NextResponse } from 'next/server';
-import { loadConfig, saveConfig, Jobs, Queue } from '@/lib/core/index.js';
-import { authenticateStrict, resetAuthModeCache } from '@/lib/core/auth.js';
+import { loadConfig, saveConfig, Jobs, Queue, classicOpenAdmin } from '@/lib/core/index.js';
+import { authenticateStrict, authEnabled, resetAuthModeCache } from '@/lib/core/auth.js';
 import { resetModerationCache } from '@/lib/core/moderation.js';
 
 export const dynamic = 'force-dynamic';
 
-// 是否拥有管理员权限：始终按令牌严格校验。
-// 免登录只影响浏览/使用；管理后台与配置修改永远要求管理员账号登录。
+// 是否拥有管理员权限：Studio 始终按令牌严格校验。
+// 原版 Web（classic）未开启自己的 IC_AUTH 时，保持上游「免登录即可配置」的行为，
+// 不受 Studio 后台登录开关影响。
 function isLocalAdmin(req) {
+  if (classicOpenAdmin(authEnabled())) return { id: 'local', role: 'admin', username: 'local' };
   const user = authenticateStrict(req, new URL(req.url));
   return user?.role === 'admin';
 }

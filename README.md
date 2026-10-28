@@ -212,6 +212,52 @@ pnpm run build && pnpm start
 
 > Agent 内核 `vendor/openclaude/dist/` 是构建产物、不入库，`pnpm install` 会自动构建一次（幂等，已存在则跳过）。只有当你改动了 `vendor/openclaude/src/` 源码后，才需要手动重跑 `pnpm build:agent`。构建细节见 [docs/agent-architecture.md](docs/agent-architecture.md)。
 
+### 分别启动原版 Web 与 Studio
+
+两套界面是独立进程，**登录与权限互不影响**。后端用 `IC_WEB_MODE` 区分当前服务哪套入口：
+
+| 模式 | 默认端口 | 登录开关来源 | 管理接口（配置/密钥/技能等） |
+|---|---|---|---|
+| `classic`（默认） | 4600 | 只认自己的 `IC_AUTH`，忽略 Studio 后台写入的 `config.auth.enabled` | 未开启 `IC_AUTH` 时保持原版免登录 |
+| `studio` | 4610 | `config.auth.enabled` 优先，其次 `IC_AUTH` | 始终要求管理员令牌（免登录模式也一样） |
+
+```bash
+# ── 原版 Web（单进程，4600）──────────────────────────────
+pnpm dev                     # 开发模式
+pnpm build && pnpm start     # 生产模式
+
+# 仅当希望原版 Web 需要登录时设置（不影响 Studio）
+IC_AUTH=1 pnpm dev
+
+# ── Studio（后端 4610 + 前端 4710，两个终端）──────────────
+# 终端 1：Studio 后端（开发）
+PORT=4610 NEXT_DIST_DIR=.next-studio-dev IC_WEB_MODE=studio IC_AUTH=1 pnpm dev
+# 终端 2：Studio 前端
+pnpm --filter studio dev
+
+# Studio 生产
+PORT=4610 NEXT_DIST_DIR=.next-studio IC_WEB_MODE=studio IC_AUTH=1 pnpm start
+pnpm --filter studio build
+STUDIO_PORT=4710 STUDIO_BACKEND=http://127.0.0.1:4610 pnpm --filter studio preview
+```
+
+Windows `cmd` 里设置环境变量：
+
+```bat
+set PORT=4610
+set NEXT_DIST_DIR=.next-studio-dev
+set IC_WEB_MODE=studio
+set IC_AUTH=1
+pnpm dev
+```
+
+> 两套同时运行时共用 `config.json` 与同一个数据库，但老 Web 不读取 Studio 后台的登录开关，Studio 的管理接口也不会因为老 Web 而放宽。
+>
+> 若生产构建报 `EPERM ... Application Data`，是 Next 文件追踪扫描用户主目录导致；构建前临时把 HOME/USERPROFILE 指向本地目录即可（`start-studio-prod.bat` 已内置该处理）：
+> ```bash
+> HOME="$PWD/.build-home" USERPROFILE="$(cygpath -w "$PWD/.build-home")" pnpm build
+> ```
+
 ## 首次配置
 
 点右上角 ⚙ 设置：

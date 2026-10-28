@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import next from 'next';
 import { WebSocketServer } from 'ws';
-import { PROJECTS_DIR, ensureDirs, loadConfig, Workflows, DEFAULT_SPECS, logger, startupCleanup, maskComfyBaseUrl, Projects } from './lib/core/index.js';
+import { PROJECTS_DIR, ensureDirs, loadConfig, Workflows, DEFAULT_SPECS, logger, startupCleanup, maskComfyBaseUrl, Projects, classicOpenAdmin } from './lib/core/index.js';
 import { scanSkills } from './lib/agent/index.js';
 import { setBroadcaster } from './lib/ws.js';
 import { sessionGate, sessionRequired } from './lib/core/session.js';
@@ -43,6 +43,9 @@ const GUEST_READ_ENDPOINTS = new Set(['/api/projects', '/api/config', '/api/queu
 // 管理类接口：无论整站是否免登录，都必须以管理员账号登录（严格令牌校验）。
 // 这样免登录版本即使部署到公网，配置、密钥、用户管理也不会跟着裸奔。
 function requiresAdmin(method, pathname) {
+  // 原版 Web（classic）且未开启自己的 IC_AUTH：沿用上游「免登录即可管理」的语义。
+  // Studio 的严格管理员校验只在 studio 模式下生效，不能反向影响原版 Web。
+  if (classicOpenAdmin(authEnabled())) return false;
   // Next 默认会 308 去掉尾部斜杠，但鉴权闸门在 Next 之前，必须自己归一化，
   // 否则 /api/config/ 这类写法能绕过严格校验（随后由 308 落回真实路由）。
   const p = pathname.replace(/\/+$/, '') || '/';

@@ -3,6 +3,8 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
+rem 原版 Web：独立入口，不读取 Studio 的登录开关，也不需要管理员登录
+set "IC_WEB_MODE=classic"
 set "PORT=4600"
 set "LOG_DIR=%~dp0logs"
 set "LOG_FILE=%~dp0logs\server.log"
